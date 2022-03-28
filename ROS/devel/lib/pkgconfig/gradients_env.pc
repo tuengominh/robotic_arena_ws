@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena_ws/ROS/devel
+
+Name: gradients_env
+Description: Description of gradients_env
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

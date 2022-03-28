@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena_ws/ROS/devel
+
+Name: resources_env
+Description: Description of resources_env
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

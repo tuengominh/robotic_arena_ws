@@ -1,0 +1,8 @@
+prefix=/home/robotics20/eco02_dac_new/devel
+
+Name: eco02_dac_new
+Description: Description of eco02_dac_new
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

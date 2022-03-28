@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena_ws/ROS/devel
+
+Name: dac_modules
+Description: Description of dac_modules
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

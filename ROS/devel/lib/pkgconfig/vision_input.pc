@@ -1,0 +1,8 @@
+prefix=/home/robotics20/Desktop/arena_ws/devel
+
+Name: vision_input
+Description: Description of vision_input
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

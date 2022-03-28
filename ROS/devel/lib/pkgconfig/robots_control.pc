@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena_ws/ROS/devel
+
+Name: robots_control
+Description: Description of robots_control
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

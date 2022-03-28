@@ -1,0 +1,8 @@
+prefix=/home/robotics20/Desktop/arena_ws/devel
+
+Name: cognitive_module
+Description: Description of cognitive_module
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

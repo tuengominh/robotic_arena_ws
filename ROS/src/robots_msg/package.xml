@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>robots_msg</name>
+  <version>0.0.0</version>
+  <description>The ROS message package</description>
+  <maintainer email="aescuredo@ibecbarcelona.eu">aescuredo</maintainer>
+  <license>BSD</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>genmsg</buildtool_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  
+  <depend>eco_msgs.msg</depend>
+  <depend>tanke_msgs.msg</depend>
+  <depend>armpap_msgs.msg</depend>
+  <depend>jevois.msg</depend>
+  <depend>lidar.msg</depend>
+  <depend>camera.msg</depend>
+  <depend>motor.msg</depend>
+  <depend>plat.msg</depend>
+  <depend>target_data.msg</depend>
+  <depend>resource.msg</depend>
+  <depend>discrete_action.msg</depend>
+ </package>

@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena_ws/ROS/devel
+
+Name: dac_experiments
+Description: Description of dac_experiments
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

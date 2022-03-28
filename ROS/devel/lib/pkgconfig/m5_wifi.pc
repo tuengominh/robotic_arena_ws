@@ -1,0 +1,8 @@
+prefix=/home/robotics20/robotic_arena/devel
+
+Name: m5_wifi
+Description: Description of m5_wifi
+Version: 1.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: roscpp rospy

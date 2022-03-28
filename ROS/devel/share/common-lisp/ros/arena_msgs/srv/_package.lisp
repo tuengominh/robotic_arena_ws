@@ -1,0 +1,10 @@
+(cl:defpackage arena_msgs-srv
+  (:use )
+  (:export
+   "SENDROBOTCOMMAND"
+   "<SENDROBOTCOMMAND-REQUEST>"
+   "SENDROBOTCOMMAND-REQUEST"
+   "<SENDROBOTCOMMAND-RESPONSE>"
+   "SENDROBOTCOMMAND-RESPONSE"
+  ))
+
