@@ -6,7 +6,6 @@ import cv2
 import json
 from std_msgs.msg import String
 from robots_msg.msg import eco_msgs, target_data, resource
-from sensor_msgs.msg import CompressedImage
 
 food_markerIds = ["47"] # List all markers used as food
 water_markerIds = ["48", "49"] # List all markers used as water

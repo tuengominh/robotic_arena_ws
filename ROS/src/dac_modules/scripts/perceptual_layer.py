@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import cv2
 import tensorflow as tf
 import keras as keras
 from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D, Flatten, Dense, Reshape
