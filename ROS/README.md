@@ -14,7 +14,7 @@ or clone [rosserial](https://github.com/ros-drivers/rosserial) repository.
 - Source the workspace: `source devel/setup.bash`
 - Build the workspace: `catkin_make -DPYTHON_EXECUTABLE=/usr/bin/python3`
 - Generate `roscore` and run single scripts: `rosrun package_name file_name.py` 
-- Run experiments via **.launch** files in the **dac_experiments/launch** folder: `roslaunch package_name file_name.launch`
+- Run experiments via **.launch** files in the **dac_exps/launch** folder: `roslaunch package_name file_name.launch`
 
 Find more information [here.](http://wiki.ros.org/ROS/Tutorials/CreatingPackage)
 
