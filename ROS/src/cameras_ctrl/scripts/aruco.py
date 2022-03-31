@@ -3,7 +3,7 @@ import math
 
 class ArucoDetect:
     def __init__(self, dictio=cv2.aruco.DICT_4X4_100, weight=72, distance=297):
-        self.weight = weight # weight of the fiducial: 72mm or 20mm 
+        self.weight = weight  # weight of the fiducial: 72mm or 20mm 
         self.distance = distance 
         self.aruco_dict = cv2.aruco.Dictionary_get(dictio)
         self.parameters = cv2.aruco.DetectorParameters_create()

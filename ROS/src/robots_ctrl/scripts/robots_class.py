@@ -85,7 +85,7 @@ class EcoRobot:
             msg.pos_motor2 = int(dat[6])
             msg.jevois.detect = int(dat[7])
             msg.jevois.id = int(dat[8])
-            msg.jevois.targx = 0 #int(dat[9])
+            msg.jevois.targx = 0  #int(dat[9])
             msg.jevois.targy = int(dat[10])
             msg.range_c = int(dat[11])
             msg.jevois.data = ""
@@ -95,7 +95,7 @@ class EcoRobot:
             # Publish sensor data from robots
             print("Sending sensor data to " + self.pub_msg + "...")
             pub_eco.publish(msg)
-            #if msg.status == self.message[0]: # "COMPLETED"
+            #if msg.status == self.message[0]:  # "COMPLETED"
             #    self.working = False
 
     def inst(self, *args):
@@ -221,7 +221,7 @@ class TankeRobot:
             # Publish sensor data from robots
             print("Sending sensor data to " + self.pub_msg + "...")
             pub_tanke.publish(msg)
-            #if msg.status == self.message[0]: # "COMPLETED"
+            #if msg.status == self.message[0]:  # "COMPLETED"
             #    self.working = False
             #r.sleep()
          
@@ -334,9 +334,9 @@ class ArmpapRobot:
             # Publish sensor data from robots
             print("Sending sensor data to " + self.pub_msg + "...")
             pub_armpap.publish(msg)
-            #if msg.status == self.message[0]: # "COMPLETED"
+            #if msg.status == self.message[0]:  # "COMPLETED"
             #    self.working = False
-            #elif msg.status == self.message[3]: # "PUBLISHER"
+            #elif msg.status == self.message[3]:  # "PUBLISHER"
             #    self.working = False
       
     def inst(self, *args):

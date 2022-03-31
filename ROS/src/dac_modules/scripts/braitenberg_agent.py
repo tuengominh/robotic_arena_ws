@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rospy
 import sys
+import json
 from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayer as RL
@@ -27,19 +28,37 @@ class Agent(object):
 
     def dist_callback(self, rosdata):
         # Receive sensor data 
-        range_c = rosdata.range_c # laser sensor
-        range_l = rosdata.range_l # left ir sensor
-        range_r = rosdata.range_r # right ir sensor 
+        range_c = rosdata.range_c
+        range_l = rosdata.range_l
+        range_r = rosdata.range_r 
         
+        # Use these info to implement cue following agent
+        #targ_id, targ_dist, targ_x = self.find_target(rosdata.targs_dist, rosdata.targs_x)
+     
         self.action = self.RL.rand_step(range_c, range_l, range_r)
+        #self.action = self.RL.catch_step(targ_id, targ_dist, targ_x, range_c, range_l, range_r)
         
         # Publish discrete action
         self.publish_msg(map_action(self.action))
-        self.r.sleep()
-           
+        self.r.sleep() 
+    
+    def find_target(self, dist_str, x_str):
+        targ_id = "" 
+        targ_dist = None
+        targ_x = None
+    
+        if dist_str != "{}" and x_str != "{}":
+            targs_dist = json.loads(dist_str)
+            targs_x = json.loads(x_str)
+            targ_id = str(list(targs_dist.keys())[0]) 
+            targ_dist = targs_dist[targ_id]
+            targ_x = targs_x[targ_id]
+            
+        return targ_id, targ_dist, targ_x
+    
     def publish_msg(self, action):
         self.msg_action = discrete_action()
-        self.msg_action.robot_id = "170" # check the correct robot ID
+        self.msg_action.robot_id = "170"  # check the correct robot ID
         self.msg_action.action = action
         print(self.msg_action.action)
         self.pub_action.publish(self.msg_action)

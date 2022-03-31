@@ -15,7 +15,8 @@
     <node name="resource_map" pkg="env_inputs" type="resource_map.py" output="screen"/>
     
     <!-- AGENT -->
-    <node name="dac_ml_agent" pkg="dac_modules" type="dac_episodic_agent.py" output="screen"/>  
+    <node name="dac_ml_agent" pkg="dac_modules" type="dac_episodic_agent.py" output="screen"/> 
+    <!-- node name="dac_ml_agent" pkg="dac_modules" type="dac_episodic_q_agent.py" output="screen"/--> 
 </launch>
 
 

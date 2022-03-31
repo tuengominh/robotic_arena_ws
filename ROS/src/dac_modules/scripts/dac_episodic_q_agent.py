@@ -9,6 +9,7 @@ from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayer as RL
 from perceptual_layer import PerceptualLayer as PL
+from adaptive_layer import AdaptiveLayer as AL
 from contextual_layer import ContextualLayer as CL
 from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
@@ -17,12 +18,13 @@ from robots_msg.msg import target, resource, discrete_action, robot_pose
 '''
     DAC-ML agent performing AnimalAI experiment
     Using autoencoder trained offline 
+    Apply Q-learning adaptive layer
 '''
 
 eps_count = 1
 next_t = 10000
 time_init = time.time()
-filename = "/home/robotics20/robotic_arena_ws/ROS/src/dac_modules/data/experiment_data_episodic.csv"
+filename = "/home/robotics20/robotic_arena_ws/ROS/src/dac_modules/data/experiment_data_dac_ml.csv"
 
 class Agent(object):
     def __init__(self):
@@ -35,7 +37,8 @@ class Agent(object):
         self.previous_couplet = np.array([np.zeros(self.p_len), np.random.choice(self.action_space)]) 
                   
         self.RL = RL()
-        self.PL = PL(prototype_length=self.p_len, frozen_weights=True, offline=True, model_ver=0)
+        self.PL = PL(prototype_length=self.p_len, frozen_weights=True, offline=True, model_ver=0) 
+        self.AL = AL(action_space=self.action_space, prototype=self.previous_couplet[0])
         self.CL = CL(stm=50, ltm=500, prototype_length=self.p_len, forget="FIFO", action_space=self.action_space, load_ltm=False, decision_inertia=True, coll_thres_act = 0.98, coll_thres_prop = 0.995, alpha_tr = 0.05)         
         
         self.rec_threshold = 0.005 # default 0.01, originally 0.001, best loss achieved 0.0024   
@@ -54,7 +57,7 @@ class Agent(object):
         # Log data to CSV
         print("Logging data to CSV file...")
         with open(filename, "w", encoding="UTF8") as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=['Episode', 'Reward', 'r_action', 'c_action', 'c_entropy', 'CL_activity', 'Action', 'rec_err', 'PL_reliability']) 
+            csv_writer = csv.DictWriter(csv_file, fieldnames=['Episode', 'Reward', 'r_action', 'c_action', 'a_action', 'c_entropy', 'a_entropy', 'CL_activity', 'Action', 'rec_err', 'PL_reliability']) 
             csv_writer.writeheader() 
 
     def init_var(self):
@@ -62,13 +65,15 @@ class Agent(object):
         self.action_chosen = 0    
         self.layer_chosen = "R"
         self.r_action = 0
-        self.c_action = 0     
+        self.c_action = 0 
+        self.a_action = 0       
         self.CL_activity = 0
         
         self.current_reward = 0       
         self.rec_error = 1000 
         self.PL_reliability = 0      
         self.c_entropy = 0
+        self.a_entropy = 0
         
         # Get robot's orientation and coordinates
         self.robot_x = 0.
@@ -112,16 +117,30 @@ class Agent(object):
         else: 
             self.PL_reliability = 0
         
+        # Update AL if previous action was selected by CL or AL
+        if self.layer_chosen == "C" or self.layer_chosen == "A":  
+            self.AL.update_estimator(self.previous_couplet, prototype, self.current_reward)
+        
+        # Get the action chosen by AL
+        self.a_action, self.a_entropy = self.AL.advance(prototype)    
+        
         # Get the action chosen by CL
         self.c_action, self.c_entropy = self.CL.advance(prototype) 
         
         # ACTION SELECTION PHASE 
         # Choose CL action if reconstruction error is smaller than reconstruction threshold AND if there is content in the CL's memory
         if self.rec_error <= self.rec_threshold and len(self.CL.LTM[2]) > self.minimum_memory: 
-            self.action_chosen = self.c_action
-            self.CL_activity = 1
-            self.layer_chosen = "C"
-            print ("CL action: ", self.action_chosen)                                 
+            if len(self.CL.LTM[2]) >= self.CL.nl: # LTM is full
+                if self.AL.entropy < self.CL.entropy and self.AL.entropy > 0:
+                    self.action_chosen = self.a_action
+                    self.CL_activity = 0
+                    self.layer_chosen = "A"
+                    print ("AL action: ", self.action_chosen)
+                else:
+                    self.action_chosen = self.c_action
+                    self.CL_activity = 1
+                    self.layer_chosen = "C"
+                    print ("CL action: ", self.action_chosen)                   
         else:
             self.action_chosen = self.r_action
             self.CL_activity = 0
@@ -136,8 +155,8 @@ class Agent(object):
         
         # Log episodes' info
         with open(filename, "a", newline="") as csv_file:
-            csv_writer = csv.DictWriter(csv_file, fieldnames=['Episode', 'Reward', 'r_action', 'c_action', 'c_entropy', 'CL_activity', 'Action', 'rec_err', 'PL_reliability']) 
-            csv_writer.writerow({'Episode': eps_count, 'Reward': self.current_reward, 'r_action': self.r_action, 'c_action': self.c_action, 'c_entropy': self.c_entropy, 'CL_activity': self.CL_activity, 'Action': self.action_chosen, 'rec_error': self.rec_error, 'PL_reliability': self.PL_reliability})
+            csv_writer = csv.DictWriter(csv_file, fieldnames=['Episode', 'Reward', 'r_action', 'c_action', 'a_action', 'c_entropy', 'a_entropy', 'CL_activity', 'Action', 'rec_err', 'PL_reliability']) 
+            csv_writer.writerow({'Episode': eps_count, 'Reward': self.current_reward, 'r_action': self.r_action, 'c_action': self.c_action, 'a_action': self.a_action, 'c_entropy': self.c_entropy, 'a_entropy': self.a_entropy, 'CL_activity': self.CL_activity, 'Action': self.action_chosen, 'rec_error': self.rec_error, 'PL_reliability': self.PL_reliability})
         
         # Restart episode after 10,000 timesteps
         current_t = round(time.time() - time_init)
@@ -145,6 +164,7 @@ class Agent(object):
             print("Restarting episode...")
             self.reset_eps()
             eps_count += 1
+            self.AL.update_policy(eps_count)  # update AL policy
             next_t = current_t + 10000  
         
         # End simulation after 1,000 episodes

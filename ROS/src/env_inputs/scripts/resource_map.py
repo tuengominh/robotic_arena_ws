@@ -47,10 +47,9 @@ class ResourceMap(object):
         global robot_markerId, food_markerIds, water_markerIds
         coor_msg = json.loads(rosdata.data)
         
-        # Get updated robot's coordinates and publish
+        # Get updated robot's coordinates 
         robot_coordinates = coor_msg[robot_markerId]  
-        self.robot_x, self.robot_y, robot_z = convert_coors(robot_coordinates[2], robot_coordinates[0], robot_coordinates[1])
-        self.publish_pos_msg(self.robot_x, self.robot_y, self.robot_angle)
+        self.robot_x, self.robot_y, robot_z = convert_coors(robot_coordinates[2], robot_coordinates[0], robot_coordinates[1]) 
         
         # Get updated resources' coordinates
         self.current_f_coors = self.get_res_coors(coor_msg, food_markerIds)
@@ -58,6 +57,7 @@ class ResourceMap(object):
     
         # Check collision and publish relevant data 
         self.check_collision()
+        self.publish_pos_msg(self.robot_x, self.robot_y, self.robot_angle)
         self.r.sleep()
     
     def get_res_coors(self, coors, ids): 

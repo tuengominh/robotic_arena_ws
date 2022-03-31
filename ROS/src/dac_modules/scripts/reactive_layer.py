@@ -13,15 +13,15 @@ class ReactiveLayer(object):
     def __init__(self):
         # Initialize used behaviors
         self.explorer = RandomExplore()
-        self.avoider = AvoidObstacle() 
-        self.traveler = GoPosition()  
+        self.avoider = AvoidObstacle()         
         self.catcher = CatchTarget()
         self.fleer = AvoidTarget()
+        self.traveler = GoPosition()  
 
         self.action = 8
-        self.th = 250  # threshold for obstacle avoidance
-        self.home_x = 402
-        self.home_y = 32
+        self.th = 200  # threshold for obstacle avoidance
+        self.home_x = 402  # TODO: re-calibrate
+        self.home_y = 32  # TODO: re-calibrate
 
     def rand_step(self, range_c, range_l, range_r):
         if range_c < self.th or range_l < self.th or range_r < self.th:
@@ -30,41 +30,28 @@ class ReactiveLayer(object):
             self.action = self.explorer.explore()    
         return self.action
         
-    # TODO: clean code
     def catch_step(self, targ_id, targ_dist, targ_x, range_c, range_l, range_r):
-        if targ_id == "" and range_c < self.th or range_l < self.th or range_r < self.th:
+        if range_c < self.th or range_l < self.th or range_r < self.th:
             self.action = self.avoider.avoid(range_c, range_l, range_r)
-        elif targ_id != "" and targ_x >= 0 and abs(targ_dist - range_l) <= 10:  # if target is detected on the LEFT
-            self.action = self.catcher.catch("LEFT", targ_dist)
-        elif targ_id != "" and targ_x < 0 and abs(targ_dist - range_r) <= 10 : # if target is detected on the RIGHT
-            self.action = self.catcher.catch("RIGHT", targ_dist) 
+        elif targ_id != "" and targ_dist is not None and targ_x is not None:
+            self.action = self.catcher.catch(targ_dist, targ_x, range_l, range_r)     
         else:
             self.action = self.explorer.explore()
         return self.action
         
-    # TODO: clean code
     def flee_step(self, targ_id, targ_dist, targ_x, range_c, range_l, range_r):
         if range_c < self.th or range_l < self.th or range_r < self.th:
-            if targ_id == "":  # no target detected
-                self.action = self.avoider.avoid(range_c, range_l, range_r)      
-            elif targ_id != "" and targ_x > 0 and abs(targ_dist - range_l) <= 10 : # if target is detected on the LEFT
-                if targ_dist < range_r:  # target is closer than obstacle
-                    self.action = self.fleer.flee("LEFT", targ_dist)
-                else:
-                    self.action = self.avoider.avoid(range_c, range_l, range_r)
-            elif targ_id != "" and targ_x < 0 and abs(targ_dist - range_r) <= 10 : # if target is detected on the RIGHT
-                if targ_dist < range_l:  # target is closer than obstacle
-                    self.action = self.fleer.flee("RIGHT", targ_dist)
-                else:
-                    self.action = self.avoider.avoid(range_c, range_l, range_r)     
+            self.action = self.avoider.avoid(range_c, range_l, range_r)
+        elif targ_id != "" and targ_dist is not None and targ_x is not None:
+            self.action = self.fleer.flee(targ_dist, targ_x, range_l, range_r)     
         else:
-            self.action = self.explorer.explore()               
-        return self.action
+            self.action = self.explorer.explore()
+        return self.action 
         
     def pos_step(self, target_x, target_y, robot_x, robot_y, angle, range_c, range_l, range_r):
         if range_c < self.th or range_l < self.th or range_r < self.th:
             self.action = self.avoider.avoid(range_c, range_l, range_r)           
-        elif target_x is not None or target_y is not None:
+        elif target_x is not None and target_y is not None:
             self.action = self.traveler.go_to_position(robot_x, robot_y, angle, target_x, target_y)      
         else:      
             self.action = self.explorer.explore()                            

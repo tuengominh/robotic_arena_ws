@@ -4,7 +4,7 @@ import numpy as np
 import pickle as pkl 
 from attractor import Attractor
 
-ltm_path = "/home/robotics20/robotic_arena_ws/ROS/src/dac_modules/ltm/" # folder to save LTM
+ltm_path = "/home/robotics20/robotic_arena_ws/ROS/src/dac_modules/ltm/"  # folder to save LTM
 
 '''
     Parent CL class 
@@ -17,9 +17,9 @@ class ContextualLayer(object):
         self.ns = stm  # STM sequence length
         self.nl = ltm  # LTM buffer capacity: total number of sequences stored in LTM
         self.pl = pl
-        self.forget = forget # can be "FIFO", "SING" or "PROP"
+        self.forget = forget  # can be "FIFO", "SING" or "PROP"
         self.fgt_ratio = 0.1
-        self.decision_inertia = decision_inertia # sequential bias
+        self.decision_inertia = decision_inertia  # sequential bias
         
         self.STM = [[np.zeros(self.pl), np.zeros(2)] for _ in range(self.ns)] 
         self.LTM = [[],[],[]]
@@ -41,17 +41,17 @@ class ContextualLayer(object):
         if load_ltm: self.load_LTM(latest_ltm)
 
     def advance(self, prototype):
-        q = np.ones(self.action_space)/self.action_space
+        q = np.ones(self.action_space) / self.action_space
 
         if len(self.LTM[0]) > 0:
             bias = 1
             if self.decision_inertia:
                 bias = np.array(self.tr)
-                #print("bias length: ", len(bias[0])) # proportional to sequence's length, n = LTM sequences
+                #print("bias length: ", len(bias[0]))  # proportional to sequence's length, n = LTM sequences
             collectors = (1 - (np.sum(np.abs(prototype - self.LTM[0]), axis=2)) / len(prototype)) * bias
 
             # Collector values must be above both thresholds (absolute and relative) to contribute to action
-            self.selected_actions_indx = (collectors > self.coll_thres_act) & ((collectors/collectors.max()) > self.coll_thres_prop) # proportional to sequence's length, n = LTM sequences
+            self.selected_actions_indx = (collectors > self.coll_thres_act) & ((collectors/collectors.max()) > self.coll_thres_prop)  # proportional to sequence's length, n = LTM sequences
 
             if np.any(self.selected_actions_indx):
                 actions = np.array(self.LTM[1])[self.selected_actions_indx]
@@ -78,7 +78,7 @@ class ContextualLayer(object):
                 q = m.flatten()
                 
                 # Action selection
-                self.action = np.random.choice(a=self.action_space, p=q)    
+                self.action = select_action(q)    
                 
                 # Compute entropy over the policy
                 self.calculate_entropy(q)
@@ -87,6 +87,9 @@ class ContextualLayer(object):
                    
         return self.action, self.entropy 
 
+    def select_action(self, q):
+        return np.random.choice(a=self.action_space, p=q)  
+    
     # Couplet expects a list with [prototype, action]
     # Goal is -1 or 1 indicating aversive or appetitive goal has been reached
     def update_STM(self, couplet=[]):
@@ -101,8 +104,8 @@ class ContextualLayer(object):
 
         # Update trigger values
         if (len(self.tr) > 0) and self.decision_inertia:
-            self.tr = (np.array(self.tr) * (1. - self.alpha_tr)) + self.alpha_tr # decay by default
-            self.tr[(self.tr < 1.)] = 1. # all trigger values below 1 are reset to 1
+            self.tr = (np.array(self.tr) * (1. - self.alpha_tr)) + self.alpha_tr  # decay by default
+            self.tr[(self.tr < 1.)] = 1.  # all trigger values below 1 are reset to 1
             
             tr_last_actions_indx = np.array(self.last_actions_indx)
             self.tr[tr_last_actions_indx] = 1.  # the trigger value of previously selected segments are reset to 1 
@@ -216,55 +219,11 @@ class ContextualLayerAttractor(ContextualLayer):
         super().__init__(stm, ltm, pl, forget, decision_inertia, load_ltm, action_space, coll_thres_act, coll_thres_prop, alpha_tr)
         self.attractor = Attractor()
         self.max_input = 9 
-
-    def advance(self, prototype):
-        q = np.ones(self.action_space)/self.action_space
-
-        if len(self.LTM[0]) > 0:
-            bias = 1
-            if self.decision_inertia:
-                bias = np.array(self.tr)
-                #print("bias length: ", len(bias[0])) # proportional to sequence's length, n = LTM sequences
-            collectors = (1 - (np.sum(np.abs(prototype - self.LTM[0]), axis=2)) / len(prototype)) * bias
-
-            # Collector values must be above both thresholds (absolute and relative) to contribute to action
-            self.selected_actions_indx = (collectors > self.coll_thres_act) & ((collectors/collectors.max()) > self.coll_thres_prop) # proportional to sequence's length, n = LTM sequences
-
-            if np.any(self.selected_actions_indx):
-                actions = np.array(self.LTM[1])[self.selected_actions_indx]
-                
-                # Chooose (normalized, or relative) rewards of sequences with actions selected 
-                rewards = np.array(self.LTM[2])[(np.nonzero(self.selected_actions_indx)[0])]
-                rewards = rewards / rewards.max()
-                
-                # Choose (normalized) distances of each action selected within its sequence
-                distances = (self.ns - np.nonzero(self.selected_actions_indx)[1]) / self.ns
-                
-                # Choose collector info about the actions selected that take euclidean distance of current state and collector's selected prototypes
-                collectors = collectors[self.selected_actions_indx]
-
-                # Map each selected action-vector into a matrix of N dimensions where N are the dimensions of the action space
-                m = np.zeros((len(actions), self.action_space))   
-                m[np.arange(len(actions)), actions[:].astype(int)] = collectors * (rewards * np.exp(-distances / self.tau_decay))
-                #m[np.arange(len(actions)), actions[:,0].astype(int), actions[:,1].astype(int)] = collectors * (rewards * np.exp(-distances / self.tau_decay))
-                #m[np.arange(len(actions)), actions[:,0].astype(int), actions[:,1].astype(int)] = ((collectors * rewards) / distances)
-                
-                m = np.sum(m, axis=0)
-                m = m + np.abs(m.min()) + 1 
-                m = m / m.sum()  # proportion of being selected based on the action's relative reward based on the stored experiences
-                q = m.flatten()
-                              
-                inputs = q * self.max_input
-                outputs = self.attractor.advance(I=inputs, time=1)  # time in sec
-                self.attractor.reset()
-                # Action selection
-                self.action = np.argmax(outputs) 
-
-                # Compute entropy over the policy
-                self.calculate_entropy(q)
-
-            self.selected_actions_indx = self.selected_actions_indx.tolist()
-                   
-        return self.action, self.entropy       
+    
+    def select_action(self, q):
+        inputs = q * self.max_input
+        outputs = self.attractor.advance(I=inputs, time=1)  # time in sec
+        self.attractor.reset()
+        return np.argmax(outputs)      
            
 

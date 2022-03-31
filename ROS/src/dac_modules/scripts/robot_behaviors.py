@@ -38,23 +38,16 @@ class AvoidObstacle:
         
         if range_c < 65 or range_l < 65 or range_r < 65:
            if range_r < range_c and range_r < range_l:
-               self.action = 4  # BACKWARD_LEFT
+               self.action = 4  
            elif range_l < range_c and range_l < range_c:
-               self.action = 5  # BACKWARD_RIGHT
-           else:
-               self.action = 3  # BACKWARD
-
+               self.action = 5    
         elif range_l < 135 or range_r < 135:
            if range_r < range_c and range_r < range_l:
-               self.action = 6  # LEFT
+               self.action = 6  
            elif range_l < range_c and range_l < range_c:
-               self.action = 7  # RIGHT
-
+               self.action = 7  
         else:
-            if range_r < range_l:
-                self.action = 1  # FORWARD_LEFT
-            else:
-                self.action = 2  # FORWARD_RIGHT
+            self.action = 1 if range_r < range_l else 2
                 
         return self.action
 
@@ -62,26 +55,32 @@ class CatchTarget:
     def __init__(self):
         self.action = 8
 
-    def catch(self, pos, dist): 
-        print("Catching target...")              
-        if pos == "LEFT":         
-            self.action = 6 if dist <= 45 else 1         
-        elif pos == "RIGHT":
-            self.action = 7 if dist <= 45 else 2         
+    def catch(self, dist, pos, l, r):
+        print("Catching target...")         
+        if pos >= 0 and abs(dist - l) <= 10:  # if target is detected on the LEFT
+            self.action = 6 if dist <= 65 else 1 
+        elif pos < 0 and abs(dist - r) <= 10:  # if target is detected on the RIGHT
+            self.action = 7 if dist <= 65 else 2           
         return self.action
 
 class AvoidTarget:
     def __init__(self):
         self.action = 8
 
-    def flee(self, pos, dist):
-        print("Avoiding target...")   
-        if pos == "LEFT":
-            self.action = 7 if dist <= 45 else 2         
-        elif pos == "RIGHT":
-            self.action = 6 if dist <= 45 else 1             
+    def flee(self, dist, pos, l, r):
+        print("Avoiding target...")
+        if pos >= 0 and abs(dist - l) <= 10:  # if target is detected on the LEFT
+            if dist < r:  # target is closer than obstacle
+                self.action = 7 if dist <= 65 else 2 
+            else:
+                self.action = 1
+        elif pos < 0 and abs(dist - r) <= 10:  # if target is detected on the RIGHT
+            if dist < l:  # target is closer than obstacle
+                self.action = 6 if dist <= 65 else 1 
+            else:
+                self.action = 2     
         return self.action
-        
+      
 class GoPosition:
     def __init__(self):
         self.action = 8 
@@ -118,3 +117,4 @@ class GoPosition:
         elif (theta_dot < -180):
             theta_dot = (360 + theta_dot)
         return theta_dot
+        
