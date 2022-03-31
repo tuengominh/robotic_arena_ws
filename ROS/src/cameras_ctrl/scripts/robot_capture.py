@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import rospy
 import cv2
 import numpy as np
@@ -17,17 +16,20 @@ ip_camera = "http://192.168.0.121/capture"  # eco00
 #ip_camera = "http://192.168.0.120/capture"  # eco02
 
 '''
-    Capture the egocentric images from agent's camera and send them compressed via ROS
+    Capture the egocentric images from robot's camera and send them compressed via ROS
+    Send coordinates of targets tracked by robot's camera
 '''
 
 def send_image(out_frame):
     global pub_image
+      
+    # Reshape captured images to (84,84,3) before sending
+    image = reshape_image(out_frame) 
+
+    # Publish compressed images
     img_msg = CompressedImage()
     img_msg.header.stamp = rospy.Time.now()
-    img_msg.format = "jpeg"
-    
-    # Reshape captured image to (84,84,3) before sending
-    image = reshape_image(out_frame)    
+    img_msg.format = "jpeg"   
     img_msg.data = np.array(cv2.imencode(".jpg", image)[1]).tostring()   
     pub_image.publish(img_msg)
 
@@ -40,21 +42,21 @@ def reshape_image(img):
 if __name__ == '__main__':
     # Initialize ROS node 
     rospy.init_node("m5_opencv_camera", anonymous=True) 
-    r = rospy.Rate(10)
+    r = rospy.Rate(10)  # 10Hz
     
     # Publish to ROS topics 
     pub_image = rospy.Publisher("/eco/images", CompressedImage, queue_size=1) 
-    pub_targ = rospy.Publisher("/eco/targets", String, queue_size=1)
-    #pub_targ = rospy.Publisher("/eco/targets", Float32MultiArray, queue_size=1)
+    pub_coor = rospy.Publisher("/eco/coordinates", String, queue_size=1)
+    #pub_coor = rospy.Publisher("/eco/coordinates", Float32MultiArray, queue_size=1)
     
-    #coor_targ = Float32MultiArray()
-    #coor_targ.layout.dim.append(MultiArrayDimension())
-    #coor_targ.layout.dim[0].label = "coordinates"
-    #coor_targ.layout.dim[0].size = 3
-    #coor_targ.layout.dim[0].stride = 1
-    #coor_targ.layout.data_offset = 0
+    #coor_msg = Float32MultiArray()
+    #coor_msg.layout.dim.append(MultiArrayDimension())
+    #coor_msg.layout.dim[0].label = "coordinates"
+    #coor_msg.layout.dim[0].size = 3
+    #coor_msg.layout.dim[0].stride = 1
+    #coor_msg.layout.data_offset = 0
     
-    # Set up VideoCapture 
+    # Set up ArucoDetect and VideoCapture 
     aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 20, 297) # weight of the fiducial = 20mm; distance = 297mm
     q = Queue()
     video_capture = VideoCapture(ip_camera, "m5_opencv_camera") 
@@ -76,14 +78,18 @@ if __name__ == '__main__':
             
             # Detect coordinates of targets  
             frame, coordinates = aruco.detect_coordinates(frame) 
-            #video_capture.frame = frame           
-            targ_msg = json.dumps(coordinates, allow_nan = True)
+
+            #video_capture.frame = frame   
+
+            # Parse coordinates dictionary as JSON string        
+            coor_msg = json.dumps(coordinates, allow_nan = True)
             #print("Coordinates: ", targ_msg)
             
-            pub_targ.publish(targ_msg)    
+            # Publish coordinates tracked by robot's camera
+            pub_coor.publish(coor_msg)    
             #if all(x != y for x,y in zip(coordinates, (0.0,0.0,0.0))):
-            #    targ_msg.data = [coordinates[0], coordinates[1], coordinates[2]]
-            #    pub_targ.publish(targ_msg)
+            #    coor_msg.data = [coordinates[0], coordinates[1], coordinates[2]]
+            #    pub_coor.publish(coor_msg)
         
         r.sleep()    
               

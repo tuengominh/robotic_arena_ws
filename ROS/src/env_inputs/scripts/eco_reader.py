@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import sys
-import os
 import rospy
-import cv2
 import json
 from std_msgs.msg import String
-from robots_msg.msg import eco_msgs, target_data, resource
+from robots_msg.msg import eco_msgs, target, resource
 
-food_markerIds = ["47"] # List all markers used as food
-water_markerIds = ["48", "49"] # List all markers used as water
+food_markerIds = ["47"]  # list all markers used as food
+water_markerIds = ["48", "49"]  # list all markers used as water
 
 '''
     Read sensor/camera data and detect position of obstacles or targets 
@@ -22,18 +20,19 @@ class RobotReader(object):
         # TODO: subscribe to gradients 
         self.sub_dist = rospy.Subscriber("/eco00/pub_msg", eco_msgs, self.dist_callback, queue_size=1) 
         self.sub_coll = rospy.Subscriber("/arena/resource", resource, self.coll_callback, queue_size=1)
-        self.sub_targ = rospy.Subscriber("/eco/targets", String, self.cam_callback, queue_size=1) 
+        self.sub_targ = rospy.Subscriber("/eco/coordinates", String, self.cam_callback, queue_size=1) 
        
         # Publish to ROS topics
-        self.pub = rospy.Publisher("/eco/perception", target_data, queue_size=1)   
-        self.r = rospy.Rate(10)
+        self.pub = rospy.Publisher("/eco/perception", target, queue_size=1)   
+
+        self.r = rospy.Rate(10)  # 10Hz
 
         # Initialize target variables
-        self.init_targ_var()
+        self.init_var()
         self.n_food = 0
         self.n_water = 0
 
-    def init_targ_var(self):
+    def init_var(self):
         self.targ_id = ""  
         self.targ_type = ""
         self.targ_dist = 0
@@ -104,11 +103,11 @@ class RobotReader(object):
         #print("Target: ", self.targ_id, self.targ_type, self.targ_dist, self.targ_x)
         self.publish_msg(self.dist, self.left_sensor, self.right_sensor, self.n_food, self.n_water, self.targ_id, self.targ_type, self.targ_dist, self.targ_x)
         
-        self.init_targ_var()
+        self.init_var()
         self.r.sleep()
 
     def publish_msg(self, dist, left_sensor, right_sensor, n_food, n_water, targ_id, targ_type, targ_dist, targ_x):
-        self.msg = target_data()
+        self.msg = target()
         self.msg.range_c = dist
         self.msg.range_l = left_sensor
         self.msg.range_r = right_sensor

@@ -22,7 +22,8 @@
   <depend>camera.msg</depend>
   <depend>motor.msg</depend>
   <depend>plat.msg</depend>
-  <depend>target_data.msg</depend>
+  <depend>target.msg</depend>
+  <depend>robot_pose.msg</depend>
   <depend>resource.msg</depend>
   <depend>discrete_action.msg</depend>
  </package>

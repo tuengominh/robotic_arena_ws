@@ -4,7 +4,7 @@ import sys
 from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayer as RL
-from robots_msg.msg import target_data, discrete_action
+from robots_msg.msg import target, discrete_action
 
 '''
     Braitenberg agent with random reactive controller 
@@ -18,11 +18,12 @@ class Agent(object):
         self.action = 8
         
         # Subscribe to ROS topics
-        self.sub_dist = rospy.Subscriber("/eco/perception", target_data, self.dist_callback, queue_size=1)
+        self.sub_dist = rospy.Subscriber("/eco/perception", target, self.dist_callback, queue_size=1)
         
         # Publish to ROS topics
-        self.pub_action = rospy.Publisher("/eco/discrete_action", discrete_action, queue_size=1)      
-        self.r = rospy.Rate(10)
+        self.pub_action = rospy.Publisher("/eco/discrete_action", discrete_action, queue_size=1)   
+           
+        self.r = rospy.Rate(10)  # 10Hz
 
     def dist_callback(self, rosdata):
         # Receive sensor data 

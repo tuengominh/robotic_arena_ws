@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rospy
-import sys, time
+import sys
+import time
 import numpy as np
 import json
 import csv
@@ -12,7 +13,7 @@ from adaptive_layer import AdaptiveLayer as AL
 from contextual_layer import ContextualLayer as CL
 from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
-from robots_msg.msg import target_data, resource, discrete_action
+from robots_msg.msg import target, resource, discrete_action
 
 '''
     DAC-ML agent performing AnimalAI experiment
@@ -45,7 +46,7 @@ class Agent(object):
  
         # Subscribe to ROS topics
         self.sub_env = rospy.Subscriber("/arena/resource", resource, self.update_reward, queue_size=1)
-        self.sub_dist = rospy.Subscriber("/eco/perception", target_data, self.r_step, queue_size=1)
+        self.sub_dist = rospy.Subscriber("/eco/perception", target, self.r_step, queue_size=1)
         self.sub_img = rospy.Subscriber("/eco/images", CompressedImage, self.c_step, queue_size=1)
         self.sub_coor = rospy.Subscriber("/arena/coordinates", String, self.coor_callback, queue_size=1)
         self.sub_angle = rospy.Subscriber("/arena/angles", String, self.angle_callback, queue_size=1)

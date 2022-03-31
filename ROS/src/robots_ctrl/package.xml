@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>robots_control</name>
+  <name>robots_ctrl</name>
   <version>1.0.0</version>
   <description>The robot control package</description>
   <maintainer email="aescuredo@ibecbarcelona.eu">aescuredo</maintainer>

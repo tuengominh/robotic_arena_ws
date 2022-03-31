@@ -17,9 +17,8 @@ cont_eco = 0
 class RobotController(object):
     def __init__(self):
         # Subscribe to ROS topics
-        self.sub = rospy.Subscriber("/eco/discrete_action", discrete_action, self.control_robot, queue_size=1)
-        
-        self.r = rospy.Rate(10)
+        self.sub = rospy.Subscriber("/eco/discrete_action", discrete_action, self.control_robot, queue_size=1) 
+        self.r = rospy.Rate(10)  # 10Hz
 
     # Call function to publish instructions to the robot
     def control_robot(self, rosdata):

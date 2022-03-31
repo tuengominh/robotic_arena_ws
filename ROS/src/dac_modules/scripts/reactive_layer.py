@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from utils import *
 from scipy.signal import butter, lfilter
-from robot_behaviors import AvoidObstacle, RandomExplore, CatchTarget, AvoidTarget, GoPosition, InvertStep
+from robot_behaviors import AvoidObstacle, RandomExplore, CatchTarget, AvoidTarget, GoPosition
 from attractor import Attractor
 
 '''
@@ -14,12 +14,12 @@ class ReactiveLayer(object):
         # Initialize used behaviors
         self.explorer = RandomExplore()
         self.avoider = AvoidObstacle() 
-        self.inverter = InvertStep()  
         self.traveler = GoPosition()  
         self.catcher = CatchTarget()
         self.fleer = AvoidTarget()
+
         self.action = 8
-        self.th = 250
+        self.th = 250  # threshold for obstacle avoidance
         self.home_x = 402
         self.home_y = 32
 
@@ -28,15 +28,6 @@ class ReactiveLayer(object):
             self.action = self.avoider.avoid(range_c, range_l, range_r)
         else:             
             self.action = self.explorer.explore()    
-        return self.action
-
-    def pos_step(self, target_x, target_y, robot_x, robot_y, angle, range_c, range_l, range_r):
-        if range_c < self.th or range_l < self.th or range_r < self.th:
-            self.action = self.avoider.avoid(range_c, range_l, range_r)           
-        elif target_x is not None or target_y is not None:
-            self.action = self.traveler.go_to_position(robot_x, robot_y, angle, target_x, target_y)      
-        else:      
-            self.action = self.explorer.explore()                            
         return self.action
         
     # TODO: clean code
@@ -51,6 +42,7 @@ class ReactiveLayer(object):
             self.action = self.explorer.explore()
         return self.action
         
+    # TODO: clean code
     def flee_step(self, targ_id, targ_dist, targ_x, range_c, range_l, range_r):
         if range_c < self.th or range_l < self.th or range_r < self.th:
             if targ_id == "":  # no target detected
@@ -69,8 +61,13 @@ class ReactiveLayer(object):
             self.action = self.explorer.explore()               
         return self.action
         
-    def invert(self, step):
-        self.action = self.inverter.invert(step)
+    def pos_step(self, target_x, target_y, robot_x, robot_y, angle, range_c, range_l, range_r):
+        if range_c < self.th or range_l < self.th or range_r < self.th:
+            self.action = self.avoider.avoid(range_c, range_l, range_r)           
+        elif target_x is not None or target_y is not None:
+            self.action = self.traveler.go_to_position(robot_x, robot_y, angle, target_x, target_y)      
+        else:      
+            self.action = self.explorer.explore()                            
         return self.action
         
     def return_home(self, robot_x, robot_y, angle, range_c, range_l, range_r):

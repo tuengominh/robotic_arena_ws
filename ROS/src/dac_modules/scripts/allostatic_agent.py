@@ -8,7 +8,7 @@ from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayerAllostatic as RL
 from std_msgs.msg import String
-from robots_msg.msg import target_data, resource, discrete_action
+from robots_msg.msg import target, resource, discrete_action
 
 step_count = 0
 eps_count = 1
@@ -30,7 +30,7 @@ class Agent(object):
         self.init_var()   
  
         # Subscribe to ROS topics
-        self.sub_dist = rospy.Subscriber("/eco/perception", target_data, self.obj_callback, queue_size=1)   
+        self.sub_dist = rospy.Subscriber("/eco/perception", target, self.obj_callback, queue_size=1)   
         self.sub_coor = rospy.Subscriber("/arena/coordinates", String, self.coor_callback, queue_size=1)
         self.sub_angle = rospy.Subscriber("/arena/angles", String, self.angle_callback, queue_size=1)
         self.sub_res = rospy.Subscriber("/arena/resource", resource, self.allostasis, queue_size=1)

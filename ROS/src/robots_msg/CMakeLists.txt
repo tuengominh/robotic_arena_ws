@@ -20,7 +20,8 @@ find_package(
    camera.msg
    motor.msg
    plat.msg
-   target_data.msg
+   target.msg
+   robot_pose.msg
    discrete_action.msg
    resource.msg
   )

@@ -1,4 +1,5 @@
 def convert_coors(cX, cY, cZ):
+    # TODO: re-calibrate
     min_x = -540
     max_x = 200
     min_y = -880

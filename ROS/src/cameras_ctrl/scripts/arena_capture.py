@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 import rospy
 import cv2
 import numpy as np
@@ -8,7 +7,7 @@ from aruco import ArucoDetect
 from video_capture import VideoCapture
 from threading import Thread
 from queue import Queue
-from std_msgs.msg import Float32MultiArray, MultiArrayDimension, String
+from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage 
 
 id_camera = 0  # check the correct device ID in the terminal 
@@ -16,7 +15,7 @@ robot_markerId = "3"  # check the correct marker ID
 
 '''
     Capture allocentric images of the whole arena and send them compressed via ROS 
-    Track and send coordinates of the agent
+    Track and send coordinates of the robot
     Send coordinates to check collision and remove resources in case of non-gradient envs 
     Send coordinates to update local views and ad-sign, h-sign in case of gradient envs 
 '''
@@ -32,14 +31,14 @@ def send_image(out_frame):
 if __name__ == '__main__':
     # Initialize ROS node
     rospy.init_node("arena_camera", anonymous=True)
-    r = rospy.Rate(10)
+    r = rospy.Rate(10)  # 10Hz
     
     # Publish to ROS topics 
     pub_image = rospy.Publisher("/arena/images", CompressedImage, queue_size=1)
     pub_coor = rospy.Publisher("/arena/coordinates", String, queue_size=1)
     pub_angle = rospy.Publisher("/arena/angles", String, queue_size=1)
     
-    # Set up VideoCapture
+    # Set up ArucoDetect and VideoCapture
     aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 20, 297)  # weight of the fiducial = 20mm; distance = 297mm
     q = Queue()
     video_capture = VideoCapture(id_camera, "arena_camera", True)  # set True in case of normal camera
@@ -58,9 +57,9 @@ if __name__ == '__main__':
         if frame is not None:
             # Publish compressed images 
             send_image(frame)
+            #print("Detected markers: ", aruco.detect_ids(frame))
             
             # Detect coordinates
-            #print("Detected markers: ", aruco.detect_ids(frame))
             frame, coordinates = aruco.detect_coordinates(frame)
             if not robot_markerId in coordinates.keys():
                 coordinates[robot_markerId] = (0.0,0.0,0.0)
@@ -72,6 +71,7 @@ if __name__ == '__main__':
                 
             #video_capture.frame = frame
             
+            # Parse coordinates and orientation dictionaries as JSON strings
             coor_msg = json.dumps(coordinates, allow_nan = True)
             angle_msg = json.dumps(angles, allow_nan = True)
             #print("Coordinates: ", coor_msg)

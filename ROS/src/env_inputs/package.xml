@@ -2,7 +2,7 @@
 <package format="2">
   <name>env_inputs</name>
   <version>1.0.0</version>
-  <description>The environments package</description>
+  <description>The environment package</description>
   <maintainer email="tngo@ibecbarcelona.eu">tngo</maintainer>
   <license>TODO</license>
 
