@@ -14,7 +14,7 @@ path_folder_img = "/home/robotics20/robotic_arena_ws/ROS/src/cameras_control/rob
 path_folder_npy = "/home/robotics20/robotic_arena_ws/ROS/src/cameras_control/robot_captures_npy/"  # folder to save .npy images from robot's camera
 filename = "/home/robotics20/robotic_arena_ws/ROS/src/cameras_control/data/img_coor_data.csv"  # CSV file pairing images and coordinates data
 img_count = 0  # initialize to keep the previous captures from robot's camera
-robot_markerId = "3"
+robot_markerId = "0"
 
 '''
     Save compressed images from the robot's camera

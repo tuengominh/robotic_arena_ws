@@ -57,7 +57,7 @@ if __name__ == '__main__':
     #coor_msg.layout.data_offset = 0
     
     # Set up ArucoDetect and VideoCapture 
-    aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 20, 297)  # weight of the fiducial = 20mm; distance = 297mm
+    aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 72, 297)  # weight of the fiducial = 72mm; distance = 297mm
     q = Queue()
     video_capture = VideoCapture(ip_camera, "m5_opencv_camera") 
     Thread(target=video_capture.get, args=(q,)).start()

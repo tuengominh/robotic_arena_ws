@@ -1,3 +1,9 @@
+def init_markers():
+    robot_markerId = "0"
+    food_markerIds = ["100", "101", "102", "103", "104"]  # list all markers used as food  
+    water_markerIds = ["110", "111", "112", "113", "114"]  # list all markers used as water
+    return robot_markerId, food_markerIds, water_markerIds
+
 def convert_coors(cX, cY, cZ):
     # TODO: re-calibrate
     min_x = -540

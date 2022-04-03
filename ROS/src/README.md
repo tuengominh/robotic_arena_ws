@@ -22,12 +22,13 @@
 
 - Captures and saves images from all cameras
 - Make sure to use the correct IPs for cameras in **robots_capture.py** and **arena_capture.py**
+- ArUco markers can be generated [here.](https://chev.me/arucogen/)
 
 ## env_inputs ##
 
 - Environment classes for non-gradient and gradient navigation
 - Make sure to modify paths to image and data folders in **image_receiver.py**
-- Make sure to update list of used ArUco markers in **eco_reader.py** and **resource_map.py**
+- Make sure to update list of used ArUco markers in **utils.py** 
 
 ## dac_modules ##
 

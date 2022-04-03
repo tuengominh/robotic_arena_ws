@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import time
 import rospy
 import cv2
 import json
@@ -7,9 +8,13 @@ from utils import *
 from std_msgs.msg import String
 from robots_msg.msg import resource, robot_pose
 
-food_markerIds = ["47"]  # list all markers used as food
-water_markerIds = ["48", "49"]  # list all markers used as water
-robot_markerId = "3"
+robot_markerId, food_markerIds, water_markerIds = init_markers()
+eps_count = 1
+next_t = 10000
+time_init = time.time()
+collision_acc = 46  # =1/2 fiducial weight + 10
+food_imp = 0.2
+water_imp = 0.2
 
 '''
     Receive robot's coordinates to check collision 
@@ -44,7 +49,7 @@ class ResourceMap(object):
         self.robot_angle = angle_msg[robot_markerId]
 
     def arn_coor_callback(self, rosdata):
-        global robot_markerId, food_markerIds, water_markerIds
+        global robot_markerId, food_markerIds, water_markerIds, eps_count, next_t, time_init
         coor_msg = json.loads(rosdata.data)
         
         # Get updated robot's coordinates 
@@ -58,8 +63,16 @@ class ResourceMap(object):
         # Check collision and publish relevant data 
         self.check_collision()
         self.publish_pos_msg(self.robot_x, self.robot_y, self.robot_angle)
+
+        # Reactivate markers after 10,000 timesteps
+        current_t = round(time.time() - time_init)
+        if current_t == next_t:
+            init_markers()  
+            eps_count += 1
+            next_t = current_t + 10000
+
         self.r.sleep()
-    
+
     def get_res_coors(self, coors, ids): 
         coor_dict = {}
         # Deactivate irrelevant markers and previously removed resources   
@@ -69,29 +82,29 @@ class ResourceMap(object):
         return coor_dict
         
     def check_collision(self):
-        global food_markerIds, water_markerIds
+        global food_markerIds, water_markerIds, collision_acc, food_imp, water_imp
         consumed = False
         
         for key_f in self.current_f_coors: 
             f_coordinates = self.current_f_coors[str(key_f)]
             res_x_f, res_y_f, res_z_f = convert_coors(f_coordinates[2], f_coordinates[0], f_coordinates[1])
             
-            if abs(self.robot_x - res_x_f) < 0.5 and abs(self.robot_y - res_y_f) < 0.5:
+            if abs(self.robot_x - res_x_f) < collision_acc and abs(self.robot_y - res_y_f) < collision_acc:
                 # Deactivate resources in case of collision
                 food_markerIds.remove(str(key_f))    
                 # Send resource information
-                self.publish_res_msg(str(key_f), "FOOD", 0.2)
+                self.publish_res_msg(str(key_f), "FOOD", food_imp)
                 consumed = True
         
         for key_w in self.current_w_coors:
             w_coordinates = self.current_w_coors[str(key_w)]
             res_x_w, res_y_w, res_z_w = convert_coors(w_coordinates[2], w_coordinates[0], w_coordinates[1])
             
-            if abs(self.robot_x - res_x_w) < 0.2 and abs(self.robot_y - res_y_w) < 0.2:
+            if abs(self.robot_x - res_x_w) < collision_acc and abs(self.robot_y - res_y_w) < collision_acc:
                 # Deactivate resources in case of collision
                 water_markerIds.remove(str(key_w))       
                 # Send resource information
-                self.publish_res_msg(str(key_w), "WATER", 0.2)
+                self.publish_res_msg(str(key_w), "WATER", water_imp)
                 consumed = True
         
         if not consumed:

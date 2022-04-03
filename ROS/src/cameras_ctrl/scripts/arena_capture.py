@@ -11,7 +11,7 @@ from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage 
 
 id_camera = 0  # check the correct device ID in the terminal 
-robot_markerId = "3"  # check the correct marker ID 
+robot_markerId = "0"  # check the correct marker ID 
 
 '''
     Capture allocentric images of the whole arena and send them compressed via ROS 
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     pub_angle = rospy.Publisher("/arena/angles", String, queue_size=1)
     
     # Set up ArucoDetect and VideoCapture
-    aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 20, 297)  # weight of the fiducial = 20mm; distance = 297mm
+    aruco = ArucoDetect(cv2.aruco.DICT_4X4_100, 72, 297)  # weight of the fiducial = 72mm; distance = 297mm
     q = Queue()
     video_capture = VideoCapture(id_camera, "arena_camera", True)  # set True in case of normal camera
     Thread(target=video_capture.get, args=(q,)).start()

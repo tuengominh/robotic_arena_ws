@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 import sys
+import time
 import rospy
 import json
+from utils import *
 from std_msgs.msg import String
 from robots_msg.msg import eco_msgs, target, resource
 
-food_markerIds = ["47"]  # list all markers used as food
-water_markerIds = ["48", "49"]  # list all markers used as water
+robot_markerId, food_markerIds, water_markerIds = init_markers()
+eps_count = 1
+next_t = 10000
+time_init = time.time()
 
 '''
     Read sensor/camera data and detect position of obstacles or targets 
@@ -43,17 +47,24 @@ class RobotReader(object):
         self.right_sensor = rosdata.range_r  # right ir sensor
         #print("Left: ", self.left_sensor, "Right: ", self.right_sensor)
         
-    # Ignore resources in case of collision
     def coll_callback(self, rosdata):
-        global food_markerIds, water_markerIds        
+        global food_markerIds, water_markerIds, eps_count, next_t, time_init        
         res_id = rosdata.id
         res_type = rosdata.type
         #print("Collided resource: ", res_id, "Type: ", res_type)
      
+        # Ignore resources in case of collision
         if res_type == "FOOD":
             food_markerIds.remove(str(res_id))
         elif res_type == "WATER":
             water_markerIds.remove(str(res_id))
+        
+        # Reactivate markers after 10,000 timesteps
+        current_t = round(time.time() - time_init)
+        if current_t == next_t:
+            init_markers() 
+            eps_count += 1
+            next_t = current_t + 10000
             
     def cam_callback(self, rosdata):
         global food_markerIds, water_markerIds
