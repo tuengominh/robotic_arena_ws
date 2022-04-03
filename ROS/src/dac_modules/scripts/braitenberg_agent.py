@@ -8,8 +8,8 @@ from reactive_layer import ReactiveLayer as RL
 from robots_msg.msg import target, discrete_action
 
 '''
-    Braitenberg agent with random reactive controller 
-    Performing exploration while avoiding obstacles continously
+    Braitenberg agent with basic reactive controller 
+    Performing random exploration while avoiding obstacles continously
 '''
 
 class Agent(object):
@@ -31,11 +31,12 @@ class Agent(object):
         range_c = rosdata.range_c
         range_l = rosdata.range_l
         range_r = rosdata.range_r 
-        
-        # Use these info to implement cue following agent
-        #targ_id, targ_dist, targ_x = self.find_target(rosdata.targs_dist, rosdata.targs_x)
-     
         self.action = self.RL.rand_step(range_c, range_l, range_r)
+
+        ''' 
+            Uncomment these lines to implement a cue following agent 
+        '''
+        #targ_id, targ_dist, targ_x = self.find_target(rosdata.targs_dist, rosdata.targs_x)
         #self.action = self.RL.catch_step(targ_id, targ_dist, targ_x, range_c, range_l, range_r)
         
         # Publish discrete action
@@ -47,9 +48,10 @@ class Agent(object):
         targ_dist = None
         targ_x = None
     
-        if dist_str != "{}" and x_str != "{}":
+        if dist_str != "{}" and x_str != "{}":  # there is marker detected
             targs_dist = json.loads(dist_str)
             targs_x = json.loads(x_str)
+            # Only get the first marker detected
             targ_id = str(list(targs_dist.keys())[0]) 
             targ_dist = targs_dist[targ_id]
             targ_x = targs_x[targ_id]

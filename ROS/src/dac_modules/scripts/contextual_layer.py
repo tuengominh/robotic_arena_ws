@@ -78,7 +78,7 @@ class ContextualLayer(object):
                 q = m.flatten()
                 
                 # Action selection
-                self.action = select_action(q)    
+                self.action = self.select_action(q)    
                 
                 # Compute entropy over the policy
                 self.calculate_entropy(q)
@@ -118,15 +118,6 @@ class ContextualLayer(object):
             self.tr = self.tr.tolist()
 
          # TODO: add forgetting or sequences based on trigger values
-    
-    def reset_STM(self):
-        self.STM = [[np.zeros(self.pl), np.zeros(2)] for _ in range(self.ns)] 
-    
-    def reset_sequential_bias(self):
-        if (len(self.tr) > 0): 
-            self.tr = np.array(self.tr)
-            self.tr[:] = 1.0
-            self.tr = self.tr.tolist()
         
     def update_LTM(self, reward=0):
         # Update LTM if goal state reached and there is still free space in LTM
@@ -177,6 +168,15 @@ class ContextualLayer(object):
                 self.last_actions_indx = np.delete(np.array(self.last_actions_indx),idx[0:maxfgt],0).tolist()
                 print ("Number of forgotten sequences: ", maxfgt)      
     
+    def reset_STM(self):
+        self.STM = [[np.zeros(self.pl), np.zeros(2)] for _ in range(self.ns)] 
+    
+    def reset_sequential_bias(self):
+        if (len(self.tr) > 0): 
+            self.tr = np.array(self.tr)
+            self.tr[:] = 1.0
+            self.tr = self.tr.tolist()
+
     def calculate_entropy(self, policy):
         # Entropy of the probability distribution for policy stability
         # The sum of the % distribution multiplied by the logarithm -in base 2- of p
@@ -215,11 +215,11 @@ class ContextualLayer(object):
 '''
 
 class ContextualLayerAttractor(ContextualLayer):
-    def __init__(self, stm=50, ltm=3, pl=20, forget="PROP", decision_inertia=True, load_ltm=False, action_space=9, coll_thres_act=0.98, coll_thres_prop=0.995, alpha_tr=0.05):
+    def __init__(self, stm=50, ltm=3, pl=20, forget="PROP", decision_inertia=True, load_ltm=False, action_space=9, coll_thres_act=0.98, coll_thres_prop=0.995, alpha_tr=0.05, nSys=2, maxI=12):
         super().__init__(stm, ltm, pl, forget, decision_inertia, load_ltm, action_space, coll_thres_act, coll_thres_prop, alpha_tr)
-        self.attractor = Attractor()
-        self.max_input = 9 
-    
+        self.max_input = maxI
+        self.attractor = Attractor(nSys=nSys)
+         
     def select_action(self, q):
         inputs = q * self.max_input
         outputs = self.attractor.advance(I=inputs, time=1)  # time in sec

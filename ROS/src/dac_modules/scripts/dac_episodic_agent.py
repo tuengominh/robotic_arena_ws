@@ -3,14 +3,12 @@ import rospy
 import sys
 import time
 import numpy as np
-import json
 import csv
 from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayer as RL
 from perceptual_layer import PerceptualLayer as PL
 from contextual_layer import ContextualLayer as CL
-from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
 from robots_msg.msg import target, resource, discrete_action, robot_pose
 

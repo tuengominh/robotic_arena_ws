@@ -4,11 +4,12 @@ import sys
 import time
 import numpy as np
 import json
+import csv
 from utils import *
 #sys.path.append("./DAC/")
 from reactive_layer import ReactiveLayerAllostatic as RL
 from std_msgs.msg import String
-from robots_msg.msg import target, resource, discrete_action
+from robots_msg.msg import target, resource, discrete_action, robot_pose
 
 step_count = 0
 eps_count = 1
@@ -21,20 +22,14 @@ class Agent(object):
         global filename  
          
         self.N = 2  # number of homeostatic systems      
-        self.RL = RL(agent_type=0)  # 0 - constant weighting factor, 1 - interoceptive, 2 - exteroceptive
-        
-        # Internal parameters
-        self.dVs = np.full(self.N, 0.8)  # np.array([0.7, 0.8, 0.9])
-        self.decays = np.full(self.N, 0.00001)  # np.array([0.00001, 0.00002, 0.00001])
-        self.impacts = np.zeros(self.N)  
-        self.init_allo_var()
-        self.init_env_var()   
+        self.RL = RL(agent_type=0, nS=self.N)  # 0 - constant weighting factor, 1 - interoceptive, 2 - exteroceptive
+        self.init_var()   
  
         # Subscribe to ROS topics
-        self.sub_pose = rospy.Subscriber("/arena/robot_pose", robot_pose, self.pose_callback, queue_size=1)
+        self.sub_pose = rospy.Subscriber("/arena/robot_pose", robot_pose, self.pose_callback, queue_size=1) 
         self.sub_dist = rospy.Subscriber("/eco/perception", target, self.targ_callback, queue_size=1)   
         self.sub_coor = rospy.Subscriber("/arena/coordinates", String, self.coor_callback, queue_size=1)
-        self.sub_res = rospy.Subscriber("/arena/resource", resource, self.allostasis, queue_size=1)
+        self.sub_res = rospy.Subscriber("/arena/resource", resource, self.allostasis, queue_size=1)  
         # TODO: include gradients
             
         # Publish to ROS topics
@@ -43,20 +38,13 @@ class Agent(object):
         
         # Log data to CSV
         print("Logging data to CSV file...")
-        # TODO:
+        with open(filename, "w", encoding="UTF8") as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=['Time', 'dVEnergy', 'aVEnergy', 'UHunger', 'kHunger', 'ALHunger', 'DHunger', 'dVWater', 'aVWater', 'UThirst', 'kThirst', 'ALThirst', 'DThirst', 'NFood', 'NWater']) 
+            csv_writer.writeheader()
 
-    def init_allo_var(self):
-        self.aVs = np.ones(self.N) 
-        self.Us = np.zeros(self.N)         
-        self.stress = np.zeros((self.N, 1000))  # accumulate stress after 1,000 timesteps
-        self.ALs = np.zeros(self.N)
-        self.Ks = np.ones(self.N)  # np.array([0.7, 0.8, 0.9])
-        self.Ds = np.zeros(self.N) 
-        self.nS = np.zeros(self.N)
-     
-    def init_env_var(self): 
+    def init_var(self):      
         self.action = 0
-             
+        
         # Get robot's orientation and coordinates
         self.robot_x = 0.
         self.robot_y = 0.
@@ -73,18 +61,20 @@ class Agent(object):
         self.targs_y = np.full(self.N, None)
         self.targs_dist = np.full(self.N, None)
         self.targs_pos = np.full(self.N, None)
+        self.impacts = np.zeros(self.N)
+        self.nR = np.zeros(self.N)
         
     def pose_callback(self, rosdata):
         self.robot_x = rosdata.robot_x
         self.robot_y = rosdata.robot_y
         self.robot_angle = rosdata.robot_angle 
-        
+    
     def targ_callback(self, rosdata):
         self.range_c = rosdata.range_c  # laser sensor
         self.range_l = rosdata.range_l  # left ir sensor
         self.range_r = rosdata.range_r  # right ir sensor
-        self.nS[0] = rosdata.n_food  # number of food detected
-        self.nS[1] = rosdata.n_water  # number of water detected  
+        self.nR[0] = rosdata.n_food  # number of food detected
+        self.nR[1] = rosdata.n_water  # number of water detected  
         self.find_target(rosdata.targs_type, rosdata.targs_dist, rosdata.targs_x)
     
     def find_target(self, type_str, dist_str, x_str):
@@ -102,62 +92,43 @@ class Agent(object):
                 self.targs_id[1] = str(key)
                 self.targs_dist[1] = targs_dist[str(key)]
                 self.targs_pos[1] = targs_pos[str(key)]
-    
+        
     def coor_callback(self, rosdata):
-        global robot_markerId
-        coor_msg = json.loads(rosdata.data)  
-        
-        # Get robot's coordinates
-        robot_coordinates = coor_msg[str(robot_markerId)]  
-        self.robot_x, self.robot_y, robot_z = convert_coors(robot_coordinates[2], robot_coordinates[0], robot_coordinates[1])
-        
-        # Get targets' coordinates
-        for i in len(self.targets):
-            tar_coordinates = coor_msg[str(self.targets[i])]  
-            self.targets_x[i], self.targets_y[i], target_z = convert_coors(tar_coordinates[2], tar_coordinates[0], tar_coordinates[1])          
+        coor_msg = json.loads(rosdata.data)
+        for i in len(self.targs_id):
+            if self.targs_id[i] != "" and self.targs_id[i] in coor_msg:  # there is target detected in both systems
+                targ_coordinates = coor_msg[self.targs_id[i]]  
+                self.targs_x[i], self.targs_y[i], target_z = convert_coors(targ_coordinates[2], targ_coordinates[0], targ_coordinates[1])            
    
     def allostasis(self, rosdata):
         global step_count
         res_type = rosdata.type
         res_impact = rosdata.impact 
+
+        if res_type == "FOOD":
+            self.impacts[0] = res_impact
+        elif res_type == "WATER":
+            self.impacts[1] = res_impact 
         
         # Refresh stress array every 1,000 timesteps
         if step_count == 1000:
             self.stress = np.zeros((self.N, 1000))
             step_count = 0   
-        
-        # Update aVs
-        if res_type == "FOOD":
-            self.impacts[0] = res_impact
-        elif res_type == "WATER":
-            self.impacts[1] = res_impact
-                
-        self.aVs = max(min(self.aVs + self.impacts - self.decays, 1.0), 0.1)    
- 
-        # Calculate and store drive intensities    
-        self.Us = self.RL.homeostasis(self.dVs, self.aVs, self.Us)   
-        for i in len(self.Us):
-            self.stress[i, step_count] = self.Us[i]
-        
-        # Apply lowpass filter and calculate allostatic load  
-        for i in len(self.stress):  
-            self.stress[i] = self.RL.butter_lowpass_filter(self.stress[i], 0.2, 100, 3)
-            self.ALs[i] = self.RL.calculate_AL(self.stress[i])
 
-        # Modify weighting factors and calculate drives
-        self.Ks, self.Ds = self.RL.allostasis(self.Ks, self.Ds, self.ALs, self.Us, self.nS)
+        # Homeostasis mechanism    
+        self.RL.homeostasis(self.impacts, step_count)
+        
+        # Allostasis mechanism  
+        drives = self.RL.allostasis(self.nR)
   
         # Select action based on the strongest drive
-        self.step(self.Ds.index(max(self.Ds)))
-        
-        # Refresh impact for the next timestep
-        self.impacts = np.zeros(self.N)
+        self.step(drives.index(max(drives)))
         step_count += 1
         
     def step(self, max_drive):
         global eps_count, next_t, time_init, filename
       
-        # Get the action chosen by RL based on coordinates
+        # Get the action chosen by RL based on target's coordinates
         #self.action = self.RL.pos_step(self.targs_x[max_drive], self.targs_y[max_drive], self.robot_x, self.robot_y, self.robot_angle, self.range_c, self.range_l, self.range_r)
         
         # Get the action chosen by RL based on detected targets
@@ -167,7 +138,9 @@ class Agent(object):
         self.publish_msg(map_action(self.action)) 
         
         # Log episodes' info
-        # TODO:
+        with open(filename, "a", newline="") as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=['Time', 'dVEnergy', 'aVEnergy', 'UHunger', 'kHunger', 'ALHunger', 'DHunger', 'dVWater', 'aVWater', 'UThirst', 'kThirst', 'ALThirst', 'DThirst', 'NFood', 'NWater']) 
+            csv_writer.writerow({'Time': round(time.time()), 'dVEnergy': self.RL.dVs[0], 'aVEnergy': self.RL.aVs[0], 'UHunger': self.RL.Us[0], 'kHunger': self.RL.Ks[0], 'ALHunger': self.RL.ALs[0], 'DHunger': self.RL.Ds[0], 'dVWater': self.RL.dVs[1], 'aVWater': self.RL.aVs[1], 'UThirst': self.RL.Us[1], 'kThirst': self.RL.Ks[1], 'ALThirst': self.RL.ALs[1], 'DThirst': self.RL.Ds[1], 'NFood': self.nR[0], 'NWater': self.nR[1]})
         
         # Restart episode after 10,000 timesteps
         current_t = round(time.time() - time_init)
@@ -181,7 +154,7 @@ class Agent(object):
         if eps_count >= 1000:
             rospy.signal_shutdown("Done 1,000 episodes!") 
             
-        self.init_env_var()
+        self.init_var()
         self.r.sleep()  
     
     def reset_eps(self):   
@@ -191,8 +164,9 @@ class Agent(object):
         # Go back to starting point by position
         self.action_chosen = self.RL.return_home(self.robot_x, self.robot_y, self.robot_angle, self.range_c, self.range_l, self.range_r)
         self.publish_msg(map_action(self.action_chosen))
-            
-        self.init_allo_var()  
+
+        # Reset internal parameters    
+        self.RL.reset_params(self.N)  
     
     def publish_msg(self, action):
         self.msg_action = discrete_action()

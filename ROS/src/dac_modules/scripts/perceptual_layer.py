@@ -56,6 +56,7 @@ class PerceptualLayer(object):
 '''
     Convolutional autoencoder as visual processing of the agent 
     Using autoencoder trained offline 
+    TODO: train autoencoder in real-time
 '''
         
 class ConvoAutoencoder:

@@ -11,7 +11,6 @@ from reactive_layer import ReactiveLayer as RL
 from perceptual_layer import PerceptualLayer as PL
 from adaptive_layer import AdaptiveLayer as AL
 from contextual_layer import ContextualLayer as CL
-from std_msgs.msg import String
 from sensor_msgs.msg import CompressedImage
 from robots_msg.msg import target, resource, discrete_action, robot_pose
 

@@ -12,6 +12,7 @@ cont_eco = 0
     Send instructions to the robot's actuators based on discrete action
     TODO: Actuators controllers for Tanke and Armpap robots
     TODO: Instructions based on ad-sign, h-sign
+    TODO: continous action
 '''
 
 class RobotController(object):

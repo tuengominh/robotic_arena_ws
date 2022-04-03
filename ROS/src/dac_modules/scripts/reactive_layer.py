@@ -67,46 +67,62 @@ class ReactiveLayer(object):
 '''
 
 class ReactiveLayerAllostatic(ReactiveLayer):
-    def __init__(self, agent_type=0):
+    def __init__(self, agent_type=0, nS=2):
         super().__init__() 
         self.type = agent_type  # 0 - constant weighting factor, 1 - interoceptive, 2 - exteroceptive
+
+        # Internal parameters
+        self.dVs = np.full(nS, 0.8)  # np.array([0.7, 0.8, 0.9])
+        self.decays = np.full(nS, 0.00001)  # np.array([0.00001, 0.00002, 0.00001])
+        self.reset_params(nS)
                
-    # Check homeostatic states and calculate intensities |aV - dV|
-    def homeostasis(self, dVs, aVs, Us):
-        urgencies = Us    
-        for i in len(urgencies):
-            urgencies[i] = self.check_balance(aVs[i], dVs[i])
-        return urgencies
+    def reset_params(self, nS):
+        self.aVs = np.ones(nS) 
+        self.Us = np.zeros(nS)         
+        self.stress = np.zeros((nS, 1000))  # accumulate stress after 1,000 timesteps
+        self.ALs = np.zeros(nS)
+        self.Ks = np.ones(nS)  # np.array([0.7, 0.8, 0.9])
+        self.Ds = np.zeros(nS)
+    
+    def homeostasis(self, impacts, step_count):
+        # Update aVs
+        self.aVs = max(min(self.aVs + impacts - self.decays, 1.0), 0.1)  
+
+        # Check homeostatic states and calculate intensities |aV - dV|
+        for i in len(self.Us):
+            self.Us[i] = self.check_balance(self.aVs[i], self.dVs[i])
+            self.stress[i, step_count] = self.Us[i]
 
     def check_balance(self, aV, min_dV):
         urgency = abs(min_dV - aV) if aV < min_dV else 0.0
         return urgency
-       
-    def calculate_AL(self, stress_arr):
-        allo_load = max(np.mean(stress_arr), 0.0)
-        return allo_load
+    
+    def allostasis(self, nR): 
+        # Store number of detected resources
+        nums_res = nR
         
-    def allostasis(self, Ks, Ds, ALs, Us, nS): 
-        weights = Ks
-        drives = Ds
-        nums_res = nS
-         
+        # Apply lowpass filter and calculate allostatic load 
+        for i in len(self.stress):  
+            self.stress[i] = self.butter_lowpass_filter(self.stress[i], 0.2, 100, 3)
+            self.ALs[i] = self.calculate_AL(self.stress[i])
+     
         # Interoceptive adaptive agent
         if self.type == 1:
-            weights = min(weights * (1 + ALs), 1.0)
+            self.Ks = min(self.Ks * (1 + self.ALs), 1.0)
 
         # Exteroceptive adaptive agent
         elif self.type == 2:
             for i in len(nums_res):
                 nums_res[i] = map_val(nums_res[i], 0, 10000, 0, 100) if nums_res[i] <= 10000 else 100
-                weights[i] = min(weights[i] * (1 + 1 / nums_res[i]), 1.0) if nums_res[i] > 0 else 1.0
+                self.Ks[i] = min(self.Ks[i] * (1 + 1 / nums_res[i]), 1.0) if nums_res[i] > 0 else 1.0
         
         # Calculate drives
-        drives = self.calculate_drive(Us, weights)                
-        return weights, drives
+        self.Ds = self.calculate_drive(self.Us, self.Ks) 
+        return self.Ds 
         
-    def calculate_drive(self, Us, weights):
-        return Us * weights
+    def calculate_AL(self, stress_arr):
+        allo_load = max(np.mean(stress_arr), 0.0)
+        return allo_load
         
     def butter_lowpass_filter(self, data, cutoff, fs, order=5):
         b, a = self.butter_lowpass(cutoff, fs, order=order)
@@ -118,15 +134,18 @@ class ReactiveLayerAllostatic(ReactiveLayer):
         normal_cutoff = cutoff / nyq
         b, a = butter(order, normal_cutoff, btype="low", analog=False)
         return b, a
-        
+
+    def calculate_drive(self, Us, weights):
+        return Us * weights    
+
 '''
-    Child allostractor RL class 
-    TODO: fixed vs. dynamic PV/SST ratio
+    Child allostractor RL class
 '''
+
 class ReactiveLayerAllostractor(ReactiveLayerAllostatic):
-    def __init__(self):
+    def __init__(self, nSys=2):
         super().__init__()
-        self.attractor = Attractor()
+        self.attractor = Attractor(nSys=nSys)
         
     def calculate_drive(self, Us, weights):
         drives = self.attractor.advance(Us * weights, time=1) # time in sec

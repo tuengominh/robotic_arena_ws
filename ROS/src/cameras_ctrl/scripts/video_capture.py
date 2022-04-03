@@ -15,7 +15,7 @@ class VideoCapture:
         self.stream = cv2.VideoCapture(self.src)
         (self.grabbed, self.frame) = self.stream.read()
         self.sentinel = object()  # used to cleanly exit Threads
-        self.norm = norm
+        self.norm = norm  # True in case of normal camera
 
     def get(self, out_q):
         while not self.get_stopped:

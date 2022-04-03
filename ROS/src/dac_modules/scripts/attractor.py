@@ -1,13 +1,13 @@
 import numpy as np
 
 '''
-    TODO: fixed vs. dynamic PV/SST ratio
+    TODO: fixed vs. dynamic PV/SST (q) ratio
 '''
 
 class Attractor(object):	
-    def __init__(self):
+    def __init__(self, nSys=2):
         self.dt = 0.001
-        self.N = 9  # number of populations
+        self.N = nSys  # number of populations
         
         # Couplings
         self.we = np.ones(self.N) * 5  # self-excitation      
@@ -38,7 +38,6 @@ class Attractor(object):
         for t in np.arange(time):
             y = self.WilsonCowan(I)
             self.U += y * self.dt
-            
             # ReLU correction
             self.U *= self.U > 0
         return self.U
