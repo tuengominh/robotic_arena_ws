@@ -4,7 +4,7 @@
 
 - Includes **.launch** files for different experimental tasks
 - Make sure to include the correct robots and ROS nodes in the **.launch** files
-- The **random_explore.launch** file include communication params for all available robots
+- The **random_exploration.launch** file include communication params for all available robots
 
 ## robots_msg ##
 
